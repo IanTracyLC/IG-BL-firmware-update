@@ -59,8 +59,12 @@ class BTManager():
 
     def get_sb_hex(self):
         res = self.write_bytes(SB_HEX)
+        logger.info(res)
         self.sp.read_until(b"\r")
-        return res
+        try:
+            return strip_extra_characters(res.decode("ascii"))
+        except Exception:
+            return "FF"
 
     def get_sb_firmware(self):
         res = self.write_bytes(SB_FIRMWARE)
@@ -152,11 +156,6 @@ class BTManager():
 
 
 if __name__ == '__main__':
-    port = os.getenv('BL654_PORT', '/dev/ttyUSB0')
+    port = os.getenv('BL654_PORT', '/dev/ttyUSB1')
     with BTManager(port) as bt:
-        file_path = os.getenv('UWC_FILE', './mot.uwc')
-        file_name = (file_path.split("/")[-1]).split(".")[-2]
-        res, directory_list = bt.read_dir()
-        logger.info("directory {}".format(directory_list))
-        res = bt.write_bytes("ati 3 \r\n")
-        logger.info("directory {}".format(directory_list))
+        print(bt.get_sb_hex())

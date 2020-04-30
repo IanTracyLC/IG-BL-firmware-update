@@ -8,7 +8,7 @@ import sys
 import json
 import subprocess
 import glob
-
+import time
 from bt_manager import BTManager
 
 node_id = os.getenv('AWS_IOT_THING_NAME') or 'NO_THING_NAME'
@@ -34,9 +34,14 @@ def load_firmware(file):
     # Publish upload complete indication
     if res.returncode == 0:
         status_update("update complete result {}".format(res.returncode))
+        time.sleep(1)
+        #not sure why, but never works on the first open
+        with BTManager(FW_LOADER_DEVICE) as bt: 
+            pass
+        time.sleep(1)
         with BTManager(FW_LOADER_DEVICE) as bt: 
             hex = bt.get_sb_hex()
-            status_update("hex version {}".format(hex.decode("ascii")))
+            status_update("hex version {}".format(hex))
 
     else: 
         status_update("update failed result {}".format(res.returncode))
