@@ -1,0 +1,73 @@
+# Greeengrass Group definition file
+Group:
+  name: IG_BL_GG1
+Cores:
+  - name: IG_BL_GG1_core
+    key_path: ./certs
+    config_path: ./config
+    SyncShadow: False
+
+Lambdas:
+  - name: py_fw
+    runtime: python3.7
+    handler: app.function_handler
+    package: lambdas/firmware/deploy 
+    alias: dev
+    #    role: 'arn:aws:iam::886556155174:role/iatr_ig60_1' # Use an existing role instead of auto-created one
+    environment:
+      foo: bar
+    greengrassConfig:
+      MemorySize: 20000 # Kb, ask AWS why
+      Timeout: 120 # Sec
+      Pinned: True # Set True for long-lived functions
+      Environment:
+        AccessSysfs: False
+        ResourceAccessPolicies:
+          - ResourceId: volume
+            Permission: "rw"
+          - ResourceId: tty 
+            Permission: "rw"
+        Variables:
+        Variables:
+          BL654_PORT: "/dev/ttyS2"
+          FW_LOADER_START_RESP_TOPIC: fwloader/start_resp
+          DBUS_SYSTEM_BUS_ADDRESS: unix:abstract=__dbus_proxy_socket__
+
+
+
+Subscriptions:
+  - Source: Lambda::py_fw
+    Subject: "fwloader/status/#"
+    Target: cloud
+
+  - Source: cloud
+    Subject: "fwloader/trigger/#"
+    Target: Lambda::py_fw
+
+Resources:
+  # For parameter definitions, see http://boto3.readthedocs.io/en/latest/reference/services/greengrass.html#Greengrass.Client.create_resource_definition_version
+  - Name: volume
+    Id: volume
+    LocalVolumeResourceData:
+      SourcePath: /gg/data
+      DestinationPath: /test
+      GroupOwnerSetting:
+        AutoAddGroupOwner: True
+  - Name: tty
+    Id: tty
+    LocalDeviceResourceData:
+      SourcePath: /dev/ttyS2
+      GroupOwnerSetting:
+        AutoAddGroupOwner: True
+
+
+Loggers:
+  # For parameter definitions, see https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/greengrass.html#Greengrass.Client.create_logger_definition
+  - Component: Lambda # 'GreengrassSystem'|'Lambda'
+    Id: logger3 # Arbitrary string
+    Level: INFO # 'DEBUG'|'INFO'|'WARN'|'ERROR'|'FATAL'
+    Type: AWSCloudWatch # 'FileSystem'|'AWSCloudWatch'
+
+Devices: # not implemented
+  - name: ml_take2_thing_1
+    key_path: ./certs
